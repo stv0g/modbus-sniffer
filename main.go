@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -28,7 +31,7 @@ var (
 )
 
 func openReader(fn string) (*csv.Reader, error) {
-	fh, err := os.OpenFile(fn, os.O_RDONLY, 0644)
+	fh, err := os.OpenFile(fn, os.O_RDONLY, 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +40,7 @@ func openReader(fn string) (*csv.Reader, error) {
 }
 
 func openWriter(fn string) (*csv.Writer, error) {
-	fh, err := os.OpenFile(fn, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	fh, err := os.OpenFile(fn, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0o644)
 	if err != nil {
 		return nil, err
 	}

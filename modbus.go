@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -39,7 +42,7 @@ func NewReadHoldingRegistersRequest(b []byte) (*ReadHoldingRegistersRequest, []b
 		return nil, nil, ErrNotEnoughData
 	}
 
-	var fc = b[1]
+	fc := b[1]
 	if fc != 3 {
 		return nil, nil, fmt.Errorf("invalid function code: %d", fc)
 	}
@@ -65,8 +68,8 @@ func NewReadHoldingRegistersResponse(b []byte) (*ReadHoldingRegistersResponse, [
 		return nil, nil, ErrNotEnoughData
 	}
 
-	var fc = b[1]
-	var cnt = b[2]
+	fc := b[1]
+	cnt := b[2]
 
 	if fc != 3 {
 		return nil, nil, fmt.Errorf("invalid function code: %d", fc)

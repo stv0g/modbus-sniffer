@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -91,7 +94,6 @@ func (s *Sensor) Topic() string {
 }
 
 func (s *Sensor) Discover(c mqtt.Client) error {
-
 	s.StateTopic = s.Topic() + "/state"
 
 	payload, err := json.Marshal(s)

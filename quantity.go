@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import "log"
@@ -5,7 +8,7 @@ import "log"
 type Decode func(regs []uint16) (Result, error)
 
 type Quantity struct {
-	Register uint16 `json:"register"`
+	Register     uint16  `json:"register"`
 	Size         int     `json:"size"`
 	Scale        float32 `json:"scale"`
 	Offset       float32 `json:"offset"`

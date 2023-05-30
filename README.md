@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # lg-ess-mqtt
 
 This projects is a firmware extension for the 1st generation LG ESS PV/Battery systems to publish the internal system state periodically via MQTT.
