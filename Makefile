@@ -21,6 +21,7 @@ build:
 	go build -o $(EXEC) .
 
 install: build
+	$(SSH) killall $(EXEC)
 	scp $(EXEC) $(USER)@$(HOST):/usr/bin/modbus-sniffer
 	$(SSH) mkdir -p /etc/modbus-sniffer
 	scp etc/sensors.yaml $(USER)@$(HOST):/etc/modbus-sniffer/sensors.yaml

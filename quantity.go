@@ -28,13 +28,13 @@ func (q *Quantity) Decode(regs []uint16) (Result, error) {
 
 	switch q.Size {
 	case 1:
-		fval = float32(int16(regs[0] << 0))
+		fval = float32(int16(regs[0]))
 
 	case 2:
-		fval = float32(int32(regs[0]<<16 + regs[1]<<0))
+		fval = float32(int32(uint32(regs[0])<<16 + uint32(regs[1])))
 
 	case 4:
-		fval = float32(int64(regs[0]<<48 + regs[1]<<32 + regs[2]<<16 + regs[3]<<0))
+		fval = float32(int64(uint64(regs[0])<<48 + uint64(regs[1])<<32 + uint64(regs[2])<<16 + uint64(regs[3])))
 	}
 
 	fval += q.Offset
