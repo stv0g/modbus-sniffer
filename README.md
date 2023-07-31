@@ -3,9 +3,12 @@ SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# lg-ess-mqtt
+# modbus-sniffer
 
-This projects is a firmware extension for the 1st generation LG ESS PV/Battery systems to publish the internal system state periodically via MQTT.
+`modbus-sniffer` is little Go command line utility which sniffs Modbus communication (read holding registers commands) via Linux's `ptrace` syscall.
+It does so by attaching itself to a specified process and intercepting all `read()` & `write()` system calls which are used to communicate to a Modbus device attached to a serial port or TCP network.
+
+This project is used as a firmware extension for the 1st generation LG ESS PV/Battery systems to publish the internal system state periodically via MQTT to Homeassistant.
 
 ## Requirements
 
@@ -20,7 +23,7 @@ This projects is a firmware extension for the 1st generation LG ESS PV/Battery s
 
 ## Configuration
 
-Adjust the flags in `contrib/lg-ess-mqtt` before running `make install`.
+Adjust the flags in `contrib/modbus-sniffer` before running `make install`.
 
 ## Usage
 

@@ -5,72 +5,71 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	"golang.org/x/exp/slog"
 )
 
-type ResponsePV struct {
-	Values map[int]float32 `json:"values"`
-	Time   time.Time       `json:"time"`
+var (
+	lastReadHoldingRegistersResponse *ReadHoldingRegistersResponse
+	lastResponseResult               = map[string]ResponseStatusResult{}
+)
+
+func httpStart(addr string) {
+	http.HandleFunc("/api/v1/status", httpHandleApiStatus)
+	http.HandleFunc("/api/v1/raw", httpHandleApiRaw)
+
+	http.ListenAndServe(addr, nil)
 }
 
 type ResponseStatus struct {
-	Results map[string]float32 `json:"results"`
-	Time    time.Time          `json:"time"`
+	Results map[string]ResponseStatusResult `json:"results"`
+	Time    time.Time                       `json:"time"`
 }
 
-func httpStart() {
-	http.HandleFunc("/api/v1", httpHandleApi)
-	http.HandleFunc("/api/v1/pcs", httpHandleApiPCS)
-
-	http.ListenAndServe(":8080", nil)
+type ResponseStatusResult struct {
+	Sensor
+	Value float32 `json:"value"`
 }
 
-func httpHandleApiPCS(w http.ResponseWriter, req *http.Request) {
-	if lastPCSresponse == nil {
-		fmt.Fprintf(w, "no data yet\n")
+func httpHandleApiStatus(w http.ResponseWriter, req *http.Request) {
+	resp := ResponseStatus{
+		Time:    time.Now(),
+		Results: lastResponseResult,
+	}
+
+	if err := json.NewEncoder(w).Encode(&resp); err != nil {
+		slog.Error("Failed to write response", slog.Any("error", err))
+	}
+}
+
+type ResponseRaw struct {
+	Time         string   `json:"time"`
+	Unit         byte     `json:"unit"`
+	FunctionCode byte     `json:"function_code"`
+	ByteCount    byte     `json:"count"`
+	Registers    []uint16 `json:"registers"`
+	Checksum     uint16   `json:"checksum"`
+}
+
+func httpHandleApiRaw(w http.ResponseWriter, req *http.Request) {
+	if lastReadHoldingRegistersResponse == nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("no data yet\n"))
 		return
 	}
 
-	q := req.URL.Query()
-
-	fmt.Fprintln(w, time.Now().Format(time.RFC3339))
-	fmt.Fprintln(w, lastPCSresponse.ByteCount)
-
-	if q.Get("decode") != "" {
-		fmt.Fprintln(w, "decoded")
-
-		for i := 0; i < len(lastPCSresponse.Registers); i += 2 {
-			v := int32(lastPCSresponse.Registers[i])<<16 + int32(lastPCSresponse.Registers[i+1])
-			fmt.Fprintf(w, "%d\t%d\n", i, v)
-		}
-	} else {
-		fmt.Fprintln(w, "raw")
-
-		for i, v := range lastPCSresponse.Registers {
-			fmt.Fprintf(w, "%d\t%d\n", i, v)
-		}
-	}
-}
-
-func httpHandleApi(w http.ResponseWriter, req *http.Request) {
-	enc := json.NewEncoder(w)
-
-	results := map[string]float32{}
-
-	for key, result := range lastResults {
-		results[key] = result.Value
+	resp := ResponseRaw{
+		Time:         time.Now().Format(time.RFC3339),
+		Unit:         lastReadHoldingRegistersResponse.ByteCount,
+		FunctionCode: lastReadHoldingRegistersResponse.FunctionCode,
+		ByteCount:    lastReadHoldingRegistersResponse.ByteCount,
+		Registers:    lastReadHoldingRegistersResponse.Registers,
+		Checksum:     lastReadHoldingRegistersResponse.Checksum,
 	}
 
-	resp := ResponseStatus{
-		Time:    time.Now(),
-		Results: results,
-	}
-
-	err := enc.Encode(&resp)
-	if err != nil {
-		log.Printf("Failed to write reponse: %s\n", err)
+	if err := json.NewEncoder(w).Encode(&resp); err != nil {
+		slog.Error("Failed to write response", slog.Any("error", err))
 	}
 }

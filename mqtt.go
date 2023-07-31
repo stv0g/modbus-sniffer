@@ -4,21 +4,39 @@
 package main
 
 import (
-	"log"
+	"crypto/tls"
+	"net/url"
+	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"golang.org/x/exp/slog"
 )
 
 type MQTTClient struct {
 	mqtt.Client
+
+	connected sync.WaitGroup
 }
 
 func mqttConnect(opts *mqtt.ClientOptions) (*MQTTClient, error) {
 	client := &MQTTClient{}
 
-	opts.DefaultPublishHandler = client.OnMessage
-	opts.OnConnect = client.OnConnect
-	opts.OnConnectionLost = client.OnConnectionLost
+	opts.OnConnectAttempt = func(broker *url.URL, tlsCfg *tls.Config) *tls.Config {
+		slog.Info("Attempt connection to broker", slog.Any("broker", broker))
+
+		client.connected.Add(1)
+
+		return tlsCfg
+	}
+
+	opts.OnConnect = func(_ mqtt.Client) {
+		slog.Info("Connected to broker")
+		client.connected.Done()
+	}
+
+	opts.OnConnectionLost = func(c mqtt.Client, err error) {
+		slog.Info("Connection to broker lost", slog.Any("error", err))
+	}
 
 	client.Client = mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -28,14 +46,6 @@ func mqttConnect(opts *mqtt.ClientOptions) (*MQTTClient, error) {
 	return client, nil
 }
 
-func (c *MQTTClient) OnMessage(_ mqtt.Client, m mqtt.Message) {
-	log.Printf("Received MQTT message: %s\n", m.Payload())
-}
-
-func (c *MQTTClient) OnConnect(_ mqtt.Client) {
-	log.Print("Connected to broker\n")
-}
-
-func (c *MQTTClient) OnConnectionLost(_ mqtt.Client, err error) {
-	log.Printf("Connection to broker lost: %s\n", err)
+func (c *MQTTClient) WaitUntilConnected() {
+	c.connected.Wait()
 }

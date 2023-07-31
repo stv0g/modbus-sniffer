@@ -2,14 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-HOST=LG-Sun
+# HOST=pv-lg
+HOST=192.168.178.46
 USER=root
-EXEC=lg-ess-mqtt
+EXEC=modbus-sniffer
 
 SSH=ssh $(USER)@$(HOST)
 
 export GOOS=linux
 export GOARCH=arm
+
+# For loading $(ARGS) used in run target
+include contrib/modbus-sniffer
 
 all: build
 
@@ -17,21 +21,27 @@ build:
 	go build -o $(EXEC) .
 
 install: build
-	$(SSH) killall $(EXEC)
-	scp $(EXEC) $(USER)@$(HOST):/home/root/
-	scp contrib/lg-ess-mqtt.sh $(USER)@$(HOST):/etc/init.d/
-	scp contrib/lg-ess-mqtt $(USER)@$(HOST):/etc/default/lg-ess-mqtt
-	$(SSH) ln -fs /etc/init.d/lg-ess-mqtt.sh /etc/rc5.d/S80lg-ess-mqtt.sh
+	scp $(EXEC) $(USER)@$(HOST):/usr/bin/modbus-sniffer
+	$(SSH) mkdir -p /etc/modbus-sniffer
+	scp etc/sensors.yaml $(USER)@$(HOST):/etc/modbus-sniffer/sensors.yaml
+	scp etc/device.yaml $(USER)@$(HOST):/etc/modbus-sniffer/device.yaml
+	scp contrib/modbus-sniffer.sh $(USER)@$(HOST):/etc/init.d/
+	scp contrib/modbus-sniffer $(USER)@$(HOST):/etc/default/modbus-sniffer
+	$(SSH) ln -fs /etc/init.d/modbus-sniffer.sh /etc/rc5.d/S80modbus-sniffer.sh
 
 uninstall:
 	$(SSH) killall $(EXEC)
-	$(SSH) rm -f /etc/default/lg-ess-mqtt
-	$(SSH) rm -f /home/root/lg-ess-mqtt
-	$(SSH) rm -f /etc/init.d/lg-ess-mqtt.sh
-	$(SSH) rm -f /etc/rc5.d/S80lg-ess-mqtt.sh
+	$(SSH) rm -f \
+		/etc/modbus-sniffer \
+		/etc/default/modbus-sniffer \
+		/usr/bin/modbus-sniffer \
+		/etc/init.d/modbus-sniffer.sh \
+		/etc/rc5.d/S80modbus-sniffer.sh
 
-run: install
-	$(SSH) /home/root/$(EXEC)
+run: install run-directly
 
-.PHONY: all build run install
+run-directly:
+	$(SSH) killall $(EXEC) || true
+	$(SSH) /usr/bin/$(EXEC) $(ARGS) -filter=pcs PCSMgr
 
+.PHONY: all build run run-directly install uninstall

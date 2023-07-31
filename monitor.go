@@ -9,10 +9,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"runtime"
 	"syscall"
 	"time"
+
+	"golang.org/x/exp/slog"
 )
 
 func waitStopped(pid int) error {
@@ -23,7 +24,7 @@ func waitStopped(pid int) error {
 			return fmt.Errorf("failed to wait: %w", err)
 		}
 
-		log.Printf("Process %d stopped by signal %s\n", pid, sts.StopSignal().String())
+		slog.Info("Process stopped by signal", slog.Int("pid", pid), slog.Any("signal", sts.StopSignal()))
 		if sts.StopSignal() == syscall.SIGSTOP || sts.StopSignal() == syscall.SIGTRAP {
 			break
 		}
@@ -37,7 +38,7 @@ func monitor(pid int, msgs chan Message) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	log.Printf("Attaching to %d\n", pid)
+	slog.Info("Attaching to process", slog.Int("pid", pid))
 
 	if err := syscall.PtraceAttach(pid); err != nil {
 		return fmt.Errorf("failed to attach: %w", err)
@@ -125,7 +126,13 @@ func handle_syscall(pid int, regs syscall.PtraceRegs, orig_regs syscall.PtraceRe
 	var data []byte = make([]byte, len)
 	syscall.PtracePeekData(pid, buf, data)
 
-	// log.Printf("Syscall: id=%d, fd=%d, buf=%x, count=%d, ret=%d, data=%s\n", syscall_id, fd, buf, count, ret, hex.EncodeToString(data))
+	// slog.Debug("Handling syscall",
+	// 	slog.Any("id", syscall_id),
+	// 	slog.Any("fd", fd),
+	// 	slog.Any("buf", buf),
+	// 	slog.Any("count", count),
+	// 	slog.Any("ret", ret),
+	// 	slog.Any("data", hex.EncodeToString(data)))
 
 	msgs <- Message{
 		Time:      time.Now(),

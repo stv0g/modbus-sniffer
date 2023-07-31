@@ -9,23 +9,31 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"golang.org/x/exp/slog"
 )
 
 var (
 	ErrNotEnoughData      = fmt.Errorf("not enough data")
 	ErrNotEnoughRegisters = fmt.Errorf("not enough registers")
+)
 
-	pidPCS, pidPM    int
-	fromFile, toFile string
+var (
+	pids []int
+
+	filterMode                                string
+	fromFile, toFile, sensorsFile, deviceFile string
 
 	mqttDiscovery bool
 	mqttBroker    string
 	mqttOpts      *mqtt.ClientOptions = mqtt.NewClientOptions()
 
-	hassioMQTTDiscoveryPrefix = "homeassistant"
-	hassioMQTTNodeID          = "lg-ess"
+	hassioMQTTDiscoveryPrefix string
+	hassioMQTTNodeID          string
+
+	httpListenAddr string
 
 	deviceInfo *Device
 )
@@ -48,90 +56,101 @@ func openWriter(fn string) (*csv.Writer, error) {
 	return csv.NewWriter(fh), nil
 }
 
-func main() {
-	var err error
+func parseFlags() (err error) {
+	flag.StringVar(&fromFile, "from", "", "Read data from file")
+	flag.StringVar(&toFile, "to", "", "Write data to file")
+	flag.StringVar(&sensorsFile, "sensors", "sensors.yaml", "Sensor definition file")
+	flag.StringVar(&deviceFile, "device", "device.yaml", "Device definition file")
 
-	var reader *csv.Reader
-	var writer *csv.Writer
-
-	flag.IntVar(&pidPM, "pid-pm", -1, "PowerMeterMgr pid")
-	flag.IntVar(&pidPCS, "pid-pcs", -1, "PCSMgr pid")
-	flag.StringVar(&fromFile, "from-file", "", "Read data from file")
-	flag.StringVar(&toFile, "to-file", "", "Write data to file")
-
-	flag.StringVar(&mqttOpts.ClientID, "mqtt-client-id", "lg-ess", "MQTT client ID")
+	flag.StringVar(&mqttOpts.ClientID, "mqtt-client-id", "modbus-sniffer", "MQTT client ID")
 	flag.StringVar(&mqttOpts.Username, "mqtt-username", "", "MQTT username")
 	flag.StringVar(&mqttOpts.Password, "mqtt-password", "", "MQTT password")
 	flag.StringVar(&mqttBroker, "mqtt-broker", "", "MQTT broker url")
 	flag.BoolVar(&mqttDiscovery, "mqtt-discovery", true, "Send discovery messages to MQTT")
 
 	flag.StringVar(&hassioMQTTDiscoveryPrefix, "hassio-mqtt-discovery-prefix", "homeassistant", "MQTT Discovery Prefix")
-	flag.StringVar(&hassioMQTTNodeID, "hassio-mqtt-node-id", "lg-ess", "MQTT Node ID")
+	flag.StringVar(&hassioMQTTNodeID, "hassio-mqtt-node-id", "modbus-sniffer", "MQTT Node ID")
+
+	flag.StringVar(&httpListenAddr, "http", "", "Listen address for built-in HTTP server")
+	flag.StringVar(&filterMode, "filter", "", "Set to 'pcs' to enable PCS filter")
 
 	flag.Parse()
 
-	if mqttOpts.Username == "" {
-		log.Fatal("Please provide an MQTT username via the -mqtt-username flag")
+	if mqttBroker != "" {
+		mqttOpts.AddBroker(mqttBroker)
+
+		if mqttOpts.Username == "" || mqttOpts.Password == "" {
+			return fmt.Errorf("please provide an MQTT username and password via the -mqtt-username, -mqtt-password flags")
+		}
 	}
 
-	if mqttOpts.Password == "" {
-		log.Fatal("Please provide an MQTT password via the -mqtt-password flag")
+	// Get process IDs
+	for i := 0; i < flag.NArg(); i++ {
+		pidOrProcess := flag.Arg(i)
+
+		var pid int
+
+		if pid, err = strconv.Atoi(pidOrProcess); err != nil {
+			if pid, err = pidof(pidOrProcess); err != nil {
+				return fmt.Errorf("failed to find pid of process",
+					slog.String("process", pidOrProcess),
+					slog.Any("error", err))
+			}
+
+			slog.Debug("Detected PID of process",
+				slog.String("process", pidOrProcess),
+				slog.Int("pid", pid))
+		}
+
+		pids = append(pids, pid)
 	}
 
-	if mqttBroker == "" {
-		log.Fatal("Please provide an MQTT broker URL via the -mqtt-broker flag")
+	return nil
+}
+
+func main() {
+	var err error
+	var reader *csv.Reader
+	var writer *csv.Writer
+	var mqttClient *MQTTClient
+
+	if err := parseFlags(); err != nil {
+		slog.Error("Failed to parse flags", slog.Any("error", err))
 	}
 
-	mqttOpts.AddBroker(mqttBroker)
-
-	mqttClient, err := mqttConnect(mqttOpts)
+	sensorsList, err := ReadSensors(sensorsFile)
 	if err != nil {
-		log.Fatalf("Failed to connect to MQTT broker: %w", err)
+		slog.Error("Failed to parse sensor list", slog.Any("error", err))
+		return
 	}
+
+	if device, err := ReadDevice(deviceFile); err != nil {
+		slog.Error("Failed to parse device information", slog.Any("error", err))
+		return
+	} else if device != nil {
+		for i := range sensorsList {
+			sensorsList[i].Device = device
+		}
+	}
+
+	slog.Info("Loaded sensors", slog.Int("count", len(sensorsList)))
 
 	messages := make(chan Message, 100)
+	quantities := map[uint16]Quantity{}
+	sensors := map[uint16]Sensor{}
 
-	// Find pids of PCSMgr and PowerMeterMgr
-	if pidPCS < 0 {
-		pidPCS, err = pidof("PCSMgr")
-		if err != nil {
-			log.Fatalf("Failed to find pid of PCSMgr: %s", err)
-		}
+	for _, sensor := range sensorsList {
+		reg := sensor.Quantity.Register
 
-		log.Printf("Detected PID of PCSMgr: %d\n", pidPCS)
+		quantities[reg] = sensor.Quantity
+		sensors[reg] = sensor
 	}
-
-	if pidPM < 0 {
-		pidPM, err = pidof("PowerMeterMgr")
-		if err != nil {
-			log.Fatalf("Failed to find pid of PowerMeterMgr: %s", err)
-		}
-
-		log.Printf("Detected PID of PowerMeterMgr: %d\n", pidPM)
-	}
-
-	pcsQuantities := map[uint16]Quantity{}
-	pmQuantities := map[uint16]Quantity{}
-
-	for _, sensor := range Sensors {
-		switch sensor.Source {
-		case "pcs":
-			pcsQuantities[sensor.Quantity.Register] = sensor.Quantity
-
-		case "pm":
-			pmQuantities[sensor.Quantity.Register] = sensor.Quantity
-		}
-	}
-
-	pcs := NewDecoder(pcsQuantities)
-	pm := NewDecoder(pmQuantities)
-
-	pcs.Filter = PCSFilter
 
 	if fromFile != "" {
 		reader, err = openReader(fromFile)
 		if err != nil {
-			log.Fatalf("Failed to open file %s: %s", fromFile, err)
+			slog.Error("Failed to open file", slog.String("file", fromFile), slog.Any("error", err))
+			return
 		}
 	} else {
 		reader = nil
@@ -140,7 +159,8 @@ func main() {
 	if toFile != "" {
 		writer, err = openWriter(toFile)
 		if err != nil {
-			log.Fatalf("Failed to open file: %s: %s", toFile, err)
+			slog.Error("Failed to open file", slog.String("file", toFile), slog.Any("error", err))
+			return
 		}
 	} else {
 		writer = nil
@@ -158,38 +178,70 @@ func main() {
 			}
 		}()
 	} else {
-		for _, pid := range []int{pidPCS, pidPM} {
+		for _, pid := range pids {
 			go func(pid int) {
 				if err := monitor(pid, messages); err != nil {
-					log.Fatalf("Failed to ptrace serial communication: %s", err)
+					slog.Error("Failed to ptrace serial communication", slog.Any("error", err))
+					return
 				}
 			}(pid)
 		}
 	}
 
-	go httpStart()
-
-	for message := range messages {
-		var results []Result
-		var source string
-		switch message.Pid {
-		case pidPCS:
-			results = pcs.Decode(message)
-			source = "PCS"
-		case pidPM:
-			results = pm.Decode(message)
-			source = "PM"
+	if mqttBroker != "" {
+		if mqttClient, err = mqttConnect(mqttOpts); err != nil {
+			slog.Error("Failed to connect to MQTT broker", slog.Any("error", err))
+			return
 		}
 
-		for _, result := range results {
-			result.Log()
+		mqttClient.WaitUntilConnected()
 
-			name := fmt.Sprintf("%s: %s", source, result.Quantity.Name)
-			if result.Quantity.Details != "" {
-				name = fmt.Sprintf("%s: %s", name, result.Quantity.Details)
+		if mqttDiscovery {
+			for _, sensor := range sensors {
+				if err := sensor.SendConfig(mqttClient); err != nil {
+					slog.Error("Failed to send MQTT discovery config", slog.Any("error", err))
+					return
+				}
+
+				slog.Info("Send MQTT discovery config", slog.String("id", sensor.ObjectID))
+			}
+		}
+	}
+
+	if httpListenAddr != "" {
+		go httpStart(httpListenAddr)
+	}
+
+	var filter Filter
+	switch filterMode {
+	case "pcs":
+		filter = &PCSFilter{}
+	}
+
+	dec := NewDecoder(filter, quantities)
+
+	for message := range messages {
+		results := dec.Decode(message)
+
+		for _, result := range results {
+			reg := result.Quantity.Register
+
+			sensor := sensors[reg]
+
+			slog.Info("New value",
+				slog.Int("pid", message.Pid),
+				slog.Int("fd", message.Fd),
+				slog.Any("result", result), slog.Any("sensor", sensor))
+
+			name := fmt.Sprintf("%#x", reg)
+			lastResponseResult[name] = ResponseStatusResult{
+				Sensor: sensor,
+				Value:  result.Value,
 			}
 
-			lastResults[name] = result
+			if mqttClient != nil {
+				sensor.SendState(mqttClient, result.Value)
+			}
 		}
 
 		if writer != nil {
@@ -197,5 +249,3 @@ func main() {
 		}
 	}
 }
-
-var lastResults = map[string]Result{}

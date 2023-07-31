@@ -3,10 +3,19 @@
 
 package main
 
-var lastPCSresponse *ReadHoldingRegistersResponse = nil
+type Filter interface {
+	Filter(req *ReadHoldingRegistersRequest, resp *ReadHoldingRegistersResponse) bool
+}
 
-func PCSFilter(req *ReadHoldingRegistersRequest, resp *ReadHoldingRegistersResponse) bool {
-	lastPCSresponse = resp
+type PCSFilter struct {
+	lastResponse *ReadHoldingRegistersResponse
+}
+
+func (p *PCSFilter) Filter(req *ReadHoldingRegistersRequest, resp *ReadHoldingRegistersResponse) bool {
+	if p.lastResponse == nil {
+		p.lastResponse = resp
+		return false
+	}
 
 	if len(resp.Registers) < 92 {
 		return false

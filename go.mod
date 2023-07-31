@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
 // SPDX-License-Identifier: Apache-2.0
 
-module github.com/stv0g/lg-ess-mqtt
+module github.com/stv0g/modbus-sniffer
 
 go 1.17
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

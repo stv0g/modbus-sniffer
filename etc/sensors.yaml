@@ -1,0 +1,335 @@
+---
+# SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
+# SPDX-License-Identifier: Apache-2.0
+
+
+# device_class: https://www.home-assistant.io/docs/configuration/customizing-devices/#device-class
+# state_class: 	https://developers.home-assistant.io/docs/core/entity/sensor#available-state-classes
+
+# Modbus registers from LG PCS (Power Conditioning Unit)
+# Mapping is unknown. Probably internal to LG
+- object_id: pv_status
+  name: PV Status
+  component: sensor
+  modbus:
+    register: 0x9c73
+    size: 1
+    scale: 1
+
+# - object_id: pv_status_2
+#   name: PV Status 2
+#   component: sensor
+#   modbus:
+#     register: 0x9c77
+#     size: 1
+#     scale: 1
+
+- object_id: pv_ac_active_power_total
+  name: PV AC-Power Total
+  device_class: power
+  state_class: measurement
+  unit_of_measurement: W
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c7f
+    size: 1
+    scale: 1
+
+- object_id: pv_dc_current_1
+  name: PV DC-Current 1
+  device_class: current
+  state_class: measurement
+  unit_of_measurement: A
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c83
+    size: 1
+    scale: 1
+
+- object_id: pv_dc_voltage_1
+  name: PV DC-Voltage 1
+  device_class: voltage
+  state_class: measurement
+  unit_of_measurement: V
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c85
+    size: 1
+    scale: 1
+
+- object_id: pv_dc_power_1
+  name: PV DC-Power 1
+  device_class: power
+  state_class: measurement
+  unit_of_measurement: W
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c87
+    size: 1
+    scale: 1
+
+- object_id: pv_dc_current_2
+  name: PV DC-Current 2
+  device_class: current
+  state_class: measurement
+  unit_of_measurement: A
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c89
+    size: 1
+    scale: 1
+
+- object_id: pv_dc_voltage_2
+  name: PV DC-Voltage 2
+  device_class: voltage
+  state_class: measurement
+  unit_of_measurement: V
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c8b
+    size: 1
+    scale: 1
+
+- object_id: pv_dc_power_2
+  name: PV DC-Power 2
+  device_class: power
+  state_class: measurement
+  unit_of_measurement: W
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c8d
+    size: 1
+    scale: 1
+
+# - object_id: pv_ac_energy_total
+#   name: PV AC-Energy Total
+#   device_class: energy
+#   state_class: total_increasing
+#   unit_of_measurement: kWh
+#   icon: mdi:lightning-bolt
+#   component: sensor
+#   modbus:
+#     register: 0x9cA2
+#     size: 2
+#     scale: 1
+
+- object_id: pv_ac_frequency
+  name: PV AC-Frequency
+  device_class: frequency
+  state_class: measurement
+  unit_of_measurement: Hz
+  icon: mdi:sine-wave
+  component: sensor
+  modbus:
+    register: 0x9c93
+    size: 1
+    scale: 0.01
+
+- object_id: pv_bat_status
+  name: PV Bat-Status
+  component: sensor
+  modbus:
+    register: 0x9c9f
+    size: 1
+    scale: 1
+
+- object_id: pv_bat_voltage
+  name: PV Bat-Voltage
+  device_class: voltage
+  state_class: measurement
+  unit_of_measurement: V
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c95
+    size: 1
+    scale: 0.1
+
+- object_id: pv_bat_current
+  name: PV Bat-Current
+  device_class: current
+  state_class: measurement
+  unit_of_measurement: A
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c96
+    size: 2
+    scale: 0.1
+
+- object_id: pv_bat_active_power
+  name: PV Bat-Power
+  device_class: power
+  state_class: measurement
+  unit_of_measurement: W
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9c98
+    size: 2
+    scale: 1
+
+# - object_id: pv_bat_voltage_2
+#   name: PV Bat-Voltage 2
+#   device_class: voltage
+#   state_class: measurement
+#   unit_of_measurement: V
+#   icon: mdi:lightning-bolt
+#   component: sensor
+#   modbus:
+#     register: 0x9cB8
+#     size: 2
+#     scale: 1
+
+# - object_id: pv_bat_active_power_2
+#   name: PV Bat-Power 2
+#   device_class: power
+#   state_class: measurement
+#   unit_of_measurement: W
+#   icon: mdi:lightning-bolt
+#   component: sensor
+#   modbus:
+#     register: 40106
+#     size: 2
+#     scale: 1
+
+- object_id: pv_bat_soc_actual
+  name: PV Bat-SoC actual
+  device_class: battery
+  state_class: measurement
+  unit_of_measurement: "%"
+  icon: mdi:battery
+  component: sensor
+  modbus:
+    register: 0x9ca7
+    size: 1
+    scale: 0.1
+
+# - object_id: pv_bat_soc_max
+#   name: PV Bat-SoC Max
+#   device_class: battery
+#   state_class: measurement
+#   unit_of_measurement: "%"
+#   icon: mdi:battery
+#   component: sensor
+#   modbus:
+#     register: 0x9ca9
+#     size: 1
+#     scale: 0.1
+
+- object_id: pv_bat_energy_charge
+  name: PV Bat-Energy Charge
+  device_class: energy
+  state_class: total_increasing
+  unit_of_measurement: kWh
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9cae
+    size: 2
+    scale: 0.1
+
+- object_id: pv_bat_energy_discharge
+  name: PV Bat-Energy Discharge
+  device_class: energy
+  state_class: total_increasing
+  unit_of_measurement: kWh
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x9cb0
+    size: 2
+    scale: 0.1
+
+# Modbus registers from ABB EQ-B Energy Meters
+# See: https://library.abb.com/d/2CDC512084D0101
+- object_id: z0_energy_import_total
+  name: Z0 Energy Import Total
+  device_class: energy
+  state_class: total_increasing
+  unit_of_measurement: kWh
+  icon: mdi:transmission-tower-import
+  component: sensor
+  modbus:
+    register: 0x5000
+    size: 4
+    scale: 0.01
+
+- object_id: z0_energy_export_total
+  name: Z0 Energy Export Total
+  device_class: energy
+  state_class: total_increasing
+  unit_of_measurement: kWh
+  icon: mdi:transmission-tower-export
+  component: sensor
+  modbus:
+    register: 0x5004
+    size: 4
+    scale: 0.01
+
+- object_id: z0_voltage_l1
+  name: Z0 Voltage L1-N
+  device_class: voltage
+  state_class: measurement
+  unit_of_measurement: V
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x5b00
+    size: 2
+    scale: 0.1
+
+- object_id: z0_voltage_l2
+  name: Z0 Voltage L2-N
+  device_class: voltage
+  state_class: measurement
+  unit_of_measurement: V
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x5b02
+    size: 2
+    scale: 0.1
+
+- object_id: z0_voltage_l3
+  name: Z0 Voltage L3-N
+  device_class: voltage
+  state_class: measurement
+  unit_of_measurement: V
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x5b04
+    size: 2
+    scale: 0.1
+
+- object_id: z0_active_power_total
+  name: Z0 Active Power Total
+  device_class: power
+  state_class: measurement
+  unit_of_measurement: W
+  icon: mdi:lightning-bolt
+  component: sensor
+  modbus:
+    register: 0x5b14
+    size: 2
+    scale: 0.001
+
+- object_id: z0_frequency
+  name: Z0 Frequency
+  device_class: frequency
+  state_class: measurement
+  unit_of_measurement: Hz
+  icon: mdi:sine-wave
+  component: sensor
+  modbus:
+    register: 0x5b2c
+    size: 1
+    scale: 0.01

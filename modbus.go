@@ -6,10 +6,12 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 
 	"github.com/howeyc/crc16"
+	"golang.org/x/exp/slog"
 )
+
+type FilterFunc func(req *ReadHoldingRegistersRequest, resp *ReadHoldingRegistersResponse) bool
 
 type Decoder struct {
 	responseBuffer []byte
@@ -17,8 +19,7 @@ type Decoder struct {
 
 	lastRequest *ReadHoldingRegistersRequest
 	quantities  map[uint16]Quantity
-
-	Filter func(req *ReadHoldingRegistersRequest, resp *ReadHoldingRegistersResponse) bool
+	filter      Filter
 }
 
 type ReadHoldingRegistersRequest struct {
@@ -99,12 +100,10 @@ func NewReadHoldingRegistersResponse(b []byte) (*ReadHoldingRegistersResponse, [
 	return r, b[5+cnt:], nil
 }
 
-func NewDecoder(quants map[uint16]Quantity) *Decoder {
+func NewDecoder(filter Filter, quants map[uint16]Quantity) *Decoder {
 	return &Decoder{
-		responseBuffer: []byte{},
-		requestBuffer:  []byte{},
-		lastRequest:    nil,
-		quantities:     quants,
+		quantities: quants,
+		filter:     filter,
 	}
 }
 
@@ -118,14 +117,14 @@ func (d *Decoder) Decode(m Message) []Result {
 		rr, rem, err := NewReadHoldingRegistersRequest(m.Buffer)
 		if err != nil {
 			if err != ErrNotEnoughData {
-				log.Printf("Error: %s\n", err)
+				slog.Error("Failed to parse read holding register request", slog.Any("error", err))
 			}
 			return nil
 		}
 
 		d.lastRequest = rr
 
-		log.Printf("Req: %#+v\n", rr)
+		slog.Debug("ReadHoldingRegistersRequest", slog.Any("addr", rr.Address), slog.Any("count", rr.RegisterCount), slog.Any("unit", rr.Unit))
 
 		d.requestBuffer = rem
 		d.responseBuffer = []byte{}
@@ -133,18 +132,29 @@ func (d *Decoder) Decode(m Message) []Result {
 	case DirectionRead:
 		d.responseBuffer = append(d.responseBuffer, m.Buffer...)
 
+		if d.lastRequest == nil {
+			slog.Error("No request yet")
+			return nil
+		}
+
 		rr, rem, err := NewReadHoldingRegistersResponse(d.responseBuffer)
 		if err != nil {
 			if err != ErrNotEnoughData {
-				log.Printf("Error: %s\n", err)
+				slog.Error("Failed to parse holding registers response", slog.Any("error", err))
 			}
 			return nil
 		}
 
-		log.Printf("Resp: %#+v\n", rr)
+		regs := []string{}
+		for _, r := range rr.Registers {
+			regs = append(regs, fmt.Sprint(r))
+		}
 
-		if d.Filter != nil && !d.Filter(d.lastRequest, rr) {
-			log.Printf("Skipping filtered response\n")
+		slog.Debug("ReadHoldingRegistersResponse", slog.Any("count", rr.ByteCount), slog.Any("unit", rr.Unit), slog.Any("register", regs))
+
+		if d.filter != nil && !d.filter.Filter(d.lastRequest, rr) {
+			slog.Debug("Skipping filtered response")
+			return nil
 		}
 
 		for addr, quant := range d.quantities {
@@ -154,7 +164,7 @@ func (d *Decoder) Decode(m Message) []Result {
 
 				result, err := quant.Decode(regs)
 				if err != nil {
-					log.Printf("Error: %s\n", err)
+					slog.Error("Failed to decode quantity", slog.Any("error", err))
 					return nil
 				}
 

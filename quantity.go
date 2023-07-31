@@ -3,35 +3,47 @@
 
 package main
 
-import "log"
+import (
+	"encoding/binary"
+	"fmt"
 
-type Decode func(regs []uint16) (Result, error)
+	"golang.org/x/exp/slog"
+)
+
+var ByteOrder = binary.BigEndian
 
 type Quantity struct {
-	Register     uint16  `json:"register"`
-	Size         int     `json:"size"`
-	Scale        float32 `json:"scale"`
-	Offset       float32 `json:"offset"`
-	CustomDecode Decode  `json:"-"`
+	Register uint16  `json:"register" yaml:"register"`
+	Size     int     `json:"size" yaml:"size"`
+	Scale    float32 `json:"scale" yaml:"scale"`
+	Offset   float32 `json:"offset,omitempty" yaml:"offset,omitempty"`
 }
 
 func (q *Quantity) Decode(regs []uint16) (Result, error) {
-	if q.CustomDecode != nil {
-		return q.CustomDecode(regs)
-	}
-
 	if len(regs) != q.Size {
 		return Result{}, ErrNotEnoughRegisters
 	}
 
-	var val int64 = 0
-	for i := 0; i < q.Size; i++ {
-		val += int64(regs[q.Size-i-1]) << (i * 16)
+	var fval float32
+
+	switch q.Size {
+	case 1:
+		fval = float32(int16(regs[0] << 0))
+
+	case 2:
+		fval = float32(int32(regs[0]<<16 + regs[1]<<0))
+
+	case 4:
+		fval = float32(int64(regs[0]<<48 + regs[1]<<32 + regs[2]<<16 + regs[3]<<0))
 	}
+
+	fval += q.Offset
+	fval *= q.Scale
 
 	r := Result{
 		Quantity: *q,
-		Value:    (float32(val) + q.Offset) * q.Scale,
+		Raw:      regs,
+		Value:    fval,
 	}
 
 	return r, nil
@@ -40,9 +52,12 @@ func (q *Quantity) Decode(regs []uint16) (Result, error) {
 type Result struct {
 	Quantity Quantity `json:"quantity"`
 	Value    float32  `json:"value"`
+	Raw      []uint16 `json:"raw"`
 }
 
-func (r Result) Log() {
-	// log.Printf("Quant: %#+v\n", d.lastRequest)
-	log.Printf("%s %s [%s]: %f\n", r.Quantity.Name, r.Quantity.Details, r.Quantity.Unit, r.Value)
+func (r Result) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("register", fmt.Sprintf("%#x", r.Quantity.Register)),
+		slog.String("value", fmt.Sprintf("%.3f", r.Value)),
+	)
 }
