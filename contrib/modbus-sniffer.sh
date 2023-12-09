@@ -12,11 +12,10 @@
 # Required-Stop:     $network
 # Default-Start:     5
 # Default-Stop:      0 1 6
-# Short-Description: NFC daemon
 # Description:       modbus-sniffer is a daemon to publish energy measurements via MQTT
 ### END INIT INFO
 
-DAEMON="/usr/bin/modbus-sniffer"
+DAEMON="/usr/bin/modbus-sniffer-run.sh"
 PIDFILE="/var/run/modbus-sniffer-*.pid"
 DESC="LG ESS MQTT Publisher"
 

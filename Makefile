@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# HOST=pv-lg
-HOST=192.168.178.46
+HOST=pv-lg
+# HOST=192.168.178.46
 USER=root
 EXEC=modbus-sniffer
 
@@ -27,6 +27,7 @@ install: build
 	scp etc/sensors.yaml $(USER)@$(HOST):/etc/modbus-sniffer/sensors.yaml
 	scp etc/device.yaml $(USER)@$(HOST):/etc/modbus-sniffer/device.yaml
 	scp contrib/modbus-sniffer.sh $(USER)@$(HOST):/etc/init.d/
+	scp contrib/modbus-sniffer-run.sh $(USER)@$(HOST):/usr/bin/modbus-sniffer-run.sh
 	scp contrib/modbus-sniffer $(USER)@$(HOST):/etc/default/modbus-sniffer
 	$(SSH) ln -fs /etc/init.d/modbus-sniffer.sh /etc/rc5.d/S80modbus-sniffer.sh
 
@@ -36,8 +37,10 @@ uninstall:
 		/etc/modbus-sniffer \
 		/etc/default/modbus-sniffer \
 		/usr/bin/modbus-sniffer \
+		/usr/bin/modbus-sniffer-run.sh \
 		/etc/init.d/modbus-sniffer.sh \
-		/etc/rc5.d/S80modbus-sniffer.sh
+		/etc/rc5.d/S80modbus-sniffer.sh \
+		/var/run/modbus-sniffer*.pid
 
 run: install run-directly
 
