@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2023 Steffen Vogel <post@steffenvogel.de>
+# SPDX-License-Identifier: Apache-2.0
+
+# Define environment variables for modbus-sniffer service here
+
+ARGS="-sensors=/etc/modbus-sniffer/sensors.yaml -device=/etc/modbus-sniffer/device.yaml -mqtt-username=lg-ess -mqtt-password=w2sfsf3f3 -mqtt-broker=192.168.178.4:1883 -hassio-mqtt-node-id=lg-ess"
+
+ARGS_PM="${ARGS} -mqtt-client-id=lg-ess-pm -http=:8080 PowerMeterMgr"
+ARGS_PCS="${ARGS} -mqtt-client-id=lg-ess-pcs -http=:8081 -filter pcs PCSMgr"
