@@ -8,7 +8,7 @@ go 1.17
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
-	golang.org/x/exp v0.0.0-20240531132922-fd00a4e0eefc
+	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8
 	gopkg.in/yaml.v3 v3.0.1
 )
 
