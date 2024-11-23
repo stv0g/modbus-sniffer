@@ -10,5 +10,5 @@ model: ED05K000E00
 configuration_url: http://pv-lg:8080/api/v1
 sw_version: 10.04.0024
 connections:
-- ["mac", "c8:08:e9:7e:63:04"]
-- ["ip", "192.168.178.46"]
+- ["mac", "c8:08:e9:7e:58:b7"]
+- ["ip", "192.168.178.4"]
