@@ -2,8 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-HOST=pv-lg
-# HOST=192.168.178.46
+HOST=192.168.178.2
 USER=root
 EXEC=modbus-sniffer
 
@@ -21,7 +20,7 @@ build:
 	go build -o $(EXEC) .
 
 install: build
-	$(SSH) killall $(EXEC)
+	$(SSH) killall $(EXEC) || true
 	scp $(EXEC) $(USER)@$(HOST):/usr/bin/modbus-sniffer
 	$(SSH) mkdir -p /etc/modbus-sniffer
 	scp etc/sensors.yaml $(USER)@$(HOST):/etc/modbus-sniffer/sensors.yaml
