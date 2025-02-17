@@ -3,19 +3,19 @@
 
 module github.com/stv0g/modbus-sniffer
 
-go 1.22.0
+go 1.23.0
 
-toolchain go1.23.6
+toolchain go1.24.0
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
-	golang.org/x/exp v0.0.0-20250207012021-f9890c6ad9f3
+	golang.org/x/exp v0.0.0-20250215185904-eff6e970281f
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
 )
