@@ -10,7 +10,7 @@ toolchain go1.24.4
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
-	golang.org/x/exp v0.0.0-20250606033433-dcc06ee1d476
+	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 	gopkg.in/yaml.v3 v3.0.1
 )
 
