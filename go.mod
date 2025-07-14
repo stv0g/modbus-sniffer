@@ -10,12 +10,12 @@ toolchain go1.24.4
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
-	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
+	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
 )
