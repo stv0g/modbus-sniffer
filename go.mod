@@ -3,14 +3,14 @@
 
 module github.com/stv0g/modbus-sniffer
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.6
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
-	golang.org/x/exp v0.0.0-20250808145144-a408d31f581a
+	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6
 	gopkg.in/yaml.v3 v3.0.1
 )
 
