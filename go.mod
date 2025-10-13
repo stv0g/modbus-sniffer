@@ -5,7 +5,7 @@ module github.com/stv0g/modbus-sniffer
 
 go 1.24.0
 
-toolchain go1.25.1
+toolchain go1.25.2
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
